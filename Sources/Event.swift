@@ -59,6 +59,7 @@ public struct Event: ExpressibleByStringLiteral {
             "orderId" : id,
             "affiliation" : "App Store",
             "currency" : currency,
+            "amount": price,
             "origin": origin,
             "$set": ["purchase": productId],
             "products" : [
