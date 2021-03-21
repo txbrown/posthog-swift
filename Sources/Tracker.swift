@@ -7,6 +7,11 @@ public class Tracker: ObservableObject {
     public let host: URL
     public var id: String
 
+    public var isEnabled: Bool {
+        get { self.queue.client.isSendingEnabled }
+        set { self.queue.client.isSendingEnabled = newValue }
+    }
+
     private let queue: Queue
 
 
@@ -14,15 +19,16 @@ public class Tracker: ObservableObject {
 
     private var isLaunched = false
 
+
     public init(apiKey: String,
                 host: URL,
+                isEnabled: Bool = true,
                 id: String? = nil,
                 userDefaults: UserDefaults = .standard,
                 application: UIApplication? = nil) {
         self.apiKey = apiKey
         self.host = host
-
-        self.queue = Queue(client: Client(host: host, apiKey: apiKey), application: application)
+        self.queue = Queue(client: Client(host: host, apiKey: apiKey, isSendingEnabled: isEnabled), application: application)
 
         self.userDefaults = userDefaults
 

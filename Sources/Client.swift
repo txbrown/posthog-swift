@@ -17,6 +17,8 @@ class Client {
     let host: URL
     let apiKey: String
 
+    var isSendingEnabled: Bool
+
     private let encoder: JSONEncoder = {
         var encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -25,9 +27,10 @@ class Client {
     }()
 
 
-    init(host: URL, apiKey: String) {
+    init(host: URL, apiKey: String, isSendingEnabled: Bool) {
         self.host = host
         self.apiKey = apiKey
+        self.isSendingEnabled = isSendingEnabled
     }
 
 
@@ -35,6 +38,9 @@ class Client {
     /// - Parameter requests: All request to be sent.
     /// - Returns: A publisher with a boolean indicating if the request should be retried (true) or discarded (false).
     func send(batch: [EventPayload]) -> AnyPublisher<Bool, Never> {
+        guard isSendingEnabled else {
+            return Just(true).eraseToAnyPublisher()
+        }
         var request = URLRequest(url: host.appendingPathComponent("batch"))
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
