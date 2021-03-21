@@ -9,7 +9,7 @@ import SwiftUI
 import PostHog
 
 struct ContentView: View {
-    @EnvironmentObject var tracker: PostHog
+    @EnvironmentObject var tracker: Tracker
 
     var body: some View {
         Button("Send Event") {

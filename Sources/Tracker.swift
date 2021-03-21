@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-public class PostHog: ObservableObject {
+public class Tracker: ObservableObject {
 
     public let apiKey: String
     public let host: URL

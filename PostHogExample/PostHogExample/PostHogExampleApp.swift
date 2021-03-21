@@ -4,7 +4,7 @@ import PostHog
 @main
 struct PostHogExampleApp: App {
 
-    @StateObject var tracker = PostHog(apiKey: "3ySFxM8aQovRF6GGOgcENolSZDARC2HCIds3AuPh1Io", host: URL(string: "https://posthog.structured.today")!, application: .shared)
+    @StateObject var tracker = Tracker(apiKey: "3ySFxM8aQovRF6GGOgcENolSZDARC2HCIds3AuPh1Io", host: URL(string: "https://posthog.structured.today")!, application: .shared)
     @Environment(\.scenePhase) var scenePhase
 
     var body: some Scene {
