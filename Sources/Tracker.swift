@@ -37,12 +37,12 @@ public class Tracker: ObservableObject {
     }
 
 
-    public func capture(event: Event, properties: [String: Any] = [:]) {
-        self.queue.queue(event: .capture(event: event, distinctId: id, properties: properties.mapValues(AnyCodable.init)))
+    public func capture(event: Event) {
+        self.queue.queue(event: event.payload(id: id))
     }
 
     public func screen(name: String, properties: [String: Any] = [:]) {
-        self.queue.queue(event: .screen(name: name, distinctId: id, properties: properties.mapValues(AnyCodable.init)))
+        self.capture(event: Event.screen(with: name, properties: properties))
     }
 
     public func launch(properties: [String: Any] = [:]) {
@@ -56,31 +56,23 @@ public class Tracker: ObservableObject {
         self.userDefaults.setValue(build, forKey: "posthog.build")
 
         if previousBuild == nil {
-            self.capture(event: "Application Installed", properties: [
-                "version": version.codable,
-                "build": build.codable
-            ])
+            self.capture(event: .installed(version: version, build: build))
         } else if build != previousBuild {
-            self.capture(event: "Application Updated", properties: [
-                "previous_version" : previousVersion?.codable ?? "",
-                "previous_build" : previousBuild?.codable ?? "",
-                "version" : version.codable,
-                "build" : build.codable,
-            ])
+            self.capture(event: .updated(version: version,
+                                         build: build,
+                                         previousVersion: previousVersion ?? "",
+                                         previousBuild: previousBuild ?? ""))
         }
-
-        self.capture(event: "Application Opened",
-                     properties: [
-                        "from_background" : isLaunched.codable,
-                        "version" : version.codable,
-                        "build" : build.codable,
-                     ].merging(properties.mapValues(AnyCodable.init), uniquingKeysWith: { $1 }))
+        self.capture(event: .opened(fromBackground: isLaunched,
+                                    version: version,
+                                    build: build,
+                                    properties: properties))
 
         self.isLaunched = true
     }
 
     public func background(properties: [String: Any] = [:]) {
-        self.capture(event: "Application Backgrounded", properties: properties.mapValues(AnyCodable.init))
+        self.capture(event: .backgrounded(properties: properties))
         self.queue.flushAll()
     }
 }

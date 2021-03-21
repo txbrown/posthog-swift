@@ -7,30 +7,6 @@
 
 import Foundation
 
-public struct Event: Codable, ExpressibleByStringLiteral {
-    
-    let value: String
-
-    public init(_ value: String) {
-        self.value = value
-    }
-
-    public init(stringLiteral value: String) {
-        self.value = value
-    }
-    public static let screen = Event("$screen")
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(value)
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        self.value = try container.decode(String.self)
-    }
-}
-
 struct EventPayload: Codable, Hashable, Comparable {
     var timestamp: Date = Date()
 
@@ -38,27 +14,14 @@ struct EventPayload: Codable, Hashable, Comparable {
 
     let distinctId: String
 
-    let event: Event
+    let event: String
 
     let properties: [String: AnyCodable]
 
-    init(event: Event, distinctId: String, properties: [String: AnyCodable]) {
+    init(event: String, distinctId: String, properties: [String: AnyCodable]) {
         self.event = event
         self.distinctId = distinctId
         self.properties = EventPayload.context.merging(properties, uniquingKeysWith: { $1 })
-    }
-
-
-    static func screen(name: String, distinctId: String, properties: [String: AnyCodable]) -> EventPayload {
-        EventPayload(event: .screen,
-              distinctId: distinctId,
-              properties: properties.merging(["$screen_name": name.codable], uniquingKeysWith: { $1 }))
-    }
-
-    static func capture(event: Event, distinctId: String, properties: [String: AnyCodable]) -> EventPayload {
-        EventPayload(event: event,
-                     distinctId: distinctId,
-                     properties: properties)
     }
 
     static var context: [String: AnyCodable] {
