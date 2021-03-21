@@ -27,21 +27,18 @@ public struct Event: ExpressibleByStringLiteral {
         Event("$screen", properties: ["$screen_name": name].merging(properties, uniquingKeysWith: { $1 }))
     }
 
-    public static func purchaseInitiated(id: String,
-                                         currency: String,
+    public static func purchaseInitiated(currency: String,
                                          productId: String,
                                          quantity: Int = 1,
                                          price: Double,
                                          name: String,
                                          origin: String) -> Event {
         Event("Order Initiated", properties: [
-            "orderId" : id,
             "affiliation" : "App Store",
             "currency" : currency,
             "origin": origin,
             "products" : [
                 [
-                   "sku" : id,
                    "quantity" : quantity,
                    "productId" : productId,
                    "price" : price,
@@ -59,6 +56,31 @@ public struct Event: ExpressibleByStringLiteral {
                                          name: String,
                                          origin: String) -> Event {
         Event("Order Completed", properties: [
+            "orderId" : id,
+            "affiliation" : "App Store",
+            "currency" : currency,
+            "origin": origin,
+            "$set": ["purchase": productId],
+            "products" : [
+                [
+                    "sku" : id,
+                    "quantity" : quantity,
+                    "productId" : productId,
+                    "price" : price,
+                    "name" : name,
+                ]
+            ]
+        ])
+    }
+
+    public static func purchaseRestored(id: String,
+                                         currency: String,
+                                         productId: String,
+                                         quantity: Int = 1,
+                                         price: Double,
+                                         name: String,
+                                         origin: String) -> Event {
+        Event("Order Restored", properties: [
             "orderId" : id,
             "affiliation" : "App Store",
             "currency" : currency,
