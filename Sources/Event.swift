@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import StoreKit
 
 public struct Event: ExpressibleByStringLiteral {
 
@@ -54,14 +55,14 @@ public struct Event: ExpressibleByStringLiteral {
                                          quantity: Int = 1,
                                          price: Double,
                                          name: String,
-                                         origin: String) -> Event {
+                                         origin: String,
+                                         properties: [String: Any] = [:]) -> Event {
         Event("Order Completed", properties: [
             "orderId" : id,
             "affiliation" : "App Store",
             "currency" : currency,
             "amount": price,
             "origin": origin,
-            "$set": ["purchase": productId],
             "products" : [
                 [
                     "sku" : id,
@@ -71,7 +72,7 @@ public struct Event: ExpressibleByStringLiteral {
                     "name" : name,
                 ]
             ]
-        ])
+        ].merging(properties, uniquingKeysWith: { $1 }))
     }
 
     public static func purchaseRestored(id: String,
@@ -80,11 +81,13 @@ public struct Event: ExpressibleByStringLiteral {
                                          quantity: Int = 1,
                                          price: Double,
                                          name: String,
-                                         origin: String) -> Event {
+                                         origin: String,
+                                         properties: [String: Any] = [:]) -> Event {
         Event("Order Restored", properties: [
             "orderId" : id,
             "affiliation" : "App Store",
             "currency" : currency,
+            "amount": price,
             "origin": origin,
             "products" : [
                 [
@@ -95,23 +98,36 @@ public struct Event: ExpressibleByStringLiteral {
                     "name" : name,
                 ]
             ]
-        ])
+        ].merging(properties, uniquingKeysWith: { $1 }))
     }
 
-    public static func purchaseFailed(error: String,
+    public static func purchaseFailed(error: Error?,
                                       id: String,
                                       currency: String,
                                       productId: String,
                                       quantity: Int = 1,
                                       price: Double,
                                       name: String,
-                                      origin: String) -> Event {
-        Event("Order Failed", properties: [
+                                      origin: String,
+                                      properties: [String: Any] = [:]) -> Event {
+
+        let code = (error as? SKError)?.code ?? .unknown
+        guard code != .paymentCancelled else {
+            return Event.purchaseCancelled(id: id,
+                                           currency: currency,
+                                           productId: productId,
+                                           price: price,
+                                           name: name,
+                                           origin: origin,
+                                           properties: properties)
+        }
+        return Event("Order Failed", properties: [
             "orderId" : id,
             "affiliation" : "App Store",
             "currency" : currency,
+            "amount": price,
             "origin": origin,
-            "error": error,
+            "error_code": code.rawValue,
             "products" : [
                 [
                    "sku" : id,
@@ -121,7 +137,33 @@ public struct Event: ExpressibleByStringLiteral {
                    "name" : name,
                 ]
             ]
-        ])
+        ].merging(properties, uniquingKeysWith: { $1 }))
+    }
+
+    public static func purchaseCancelled(id: String,
+                                         currency: String,
+                                         productId: String,
+                                         quantity: Int = 1,
+                                         price: Double,
+                                         name: String,
+                                         origin: String,
+                                         properties: [String: Any] = [:]) -> Event {
+        Event("Order Cancelled", properties: [
+            "orderId" : id,
+            "affiliation" : "App Store",
+            "currency" : currency,
+            "amount": price,
+            "origin": origin,
+            "products" : [
+                [
+                   "sku" : id,
+                   "quantity" : quantity,
+                   "productId" : productId,
+                   "price" : price,
+                   "name" : name,
+                ]
+            ]
+        ].merging(properties, uniquingKeysWith: { $1 }))
     }
 
     static func installed(version: String, build: String) -> Event {

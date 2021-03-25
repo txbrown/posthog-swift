@@ -51,7 +51,7 @@ public class Tracker: ObservableObject {
         self.capture(event: Event.screen(with: name, properties: properties))
     }
 
-    public func launch(properties: [String: Any] = [:]) {
+    public func launched(properties: [String: Any] = [:]) {
         let previousVersion = self.userDefaults.string(forKey: "posthog.version")
         let previousBuild = self.userDefaults.string(forKey: "posthog.build")
 
@@ -77,7 +77,7 @@ public class Tracker: ObservableObject {
         self.isLaunched = true
     }
 
-    public func background(properties: [String: Any] = [:]) {
+    public func backgrounded(properties: [String: Any] = [:]) {
         self.capture(event: .backgrounded(properties: properties))
         self.queue.flushAll()
     }
