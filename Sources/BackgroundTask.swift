@@ -7,12 +7,12 @@ public protocol BackgroundTaskHandler {
 #if os(iOS)
 
 import UIKit
-public extension UIApplication: BackgroundTask {
-    func beginBackgroundTask() -> Any {
+extension UIApplication: BackgroundTaskHandler {
+    public func beginBackgroundTask() -> Any {
         return self.beginBackgroundTask(expirationHandler: nil)
     }
 
-    func endBackgroundTask(with id: Any) {
+    public func endBackgroundTask(with id: Any) {
         if let id = id as? UIBackgroundTaskIdentifier {
             self.endBackgroundTask(id)
         }
