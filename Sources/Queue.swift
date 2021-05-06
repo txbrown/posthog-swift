@@ -7,7 +7,6 @@
 
 import Foundation
 import Combine
-import UIKit
 
 class Queue {
     let maxSize: Int = 1000
@@ -16,13 +15,13 @@ class Queue {
     let maxBatch: Int = 100
 
     let client: Client
-    let application: UIApplication?
+    let background: BackgroundTaskHandler?
 
     let storage = Storage()
 
-    init(client: Client, application: UIApplication?) {
+    init(client: Client, background: BackgroundTaskHandler?) {
         self.client = client
-        self.application = application
+        self.background = background
         self.events = self.storage.load()
         Timer.publish(every: flushInterval, on: .main, in: .default)
             .autoconnect()
@@ -71,7 +70,7 @@ class Queue {
         let batch = Array(self.events.sorted().prefix(maxBatch))
         self.events.subtract(batch)
         self.sending.formUnion(batch)
-        let task = self.application?.beginBackgroundTask(expirationHandler: nil)
+        let task = self.background?.beginBackgroundTask()
         self.client.send(batch: batch)
             .receive(on: self.queue)
             .sink { [weak self] retry in
@@ -84,7 +83,7 @@ class Queue {
                 }
                 self.storage.save(queue: self.events.union(self.sending))
                 if let task = task {
-                    self.application?.endBackgroundTask(task)
+                    self.background?.endBackgroundTask(with: task)
                 }
             }
             .store(in: &cancellables)

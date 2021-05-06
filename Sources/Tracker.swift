@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 public class Tracker: ObservableObject {
 
@@ -25,10 +24,10 @@ public class Tracker: ObservableObject {
                 isEnabled: Bool = true,
                 id: String? = nil,
                 userDefaults: UserDefaults = .standard,
-                application: UIApplication? = nil) {
+                backgroundHandler: BackgroundTaskHandler? = nil) {
         self.apiKey = apiKey
         self.host = host
-        self.queue = Queue(client: Client(host: host, apiKey: apiKey, isSendingEnabled: isEnabled), application: application)
+        self.queue = Queue(client: Client(host: host, apiKey: apiKey, isSendingEnabled: isEnabled), background: backgroundHandler)
 
         self.userDefaults = userDefaults
 

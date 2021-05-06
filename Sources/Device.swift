@@ -1,27 +1,103 @@
-import UIKit
 
 //TODO: Adjust for other platforms
 struct Device {
     static var model: String {
+        #if os(macOS)
+        return ProcessInfo.modelName
+        #else
         return UIDevice.modelName
+        #endif
     }
 
     static var type: String {
+        #if os(macOS)
+        return ProcessInfo.model
+        #else
         return UIDevice.current.model
+        #endif
     }
 
     static var system: String {
+        #if os(macOS)
+        return ProcessInfo.systemName
+        #else
         return UIDevice.current.systemName
+        #endif
     }
 
     static var systemVersion: String {
+        #if os(macOS)
+        return ProcessInfo.processInfo.operatingSystemVersionString
+        #else
         return UIDevice.current.systemVersion
+        #endif
     }
 
     static var screenSize: CGSize {
+        #if os(macOS)
+        return NSScreen.screens.first?.visibleFrame.size ?? .zero
+        #else
         return UIScreen.main.bounds.size
+        #endif
+
     }
 }
+
+#if os(macOS)
+
+import IOKit
+import AppKit
+
+extension ProcessInfo {
+    static let modelName: String = {
+        let service = IOServiceGetMatchingService(kIOMasterPortDefault,
+                                                  IOServiceMatching("IOPlatformExpertDevice"))
+        var modelIdentifier: String?
+        if let modelData = IORegistryEntryCreateCFProperty(service, "model" as CFString, kCFAllocatorDefault, 0).takeRetainedValue() as? Data {
+            modelIdentifier = String(data: modelData, encoding: .utf8)?.trimmingCharacters(in: .controlCharacters)
+        }
+
+        IOObjectRelease(service)
+        return modelIdentifier ?? "macOS"
+    }()
+
+    static let model: String = {
+        if modelName.hasPrefix("iMacPro") {
+            return "iMac Pro"
+        } else if modelName.hasPrefix("iMac") {
+            return "iMac"
+        } else if modelName.hasPrefix("Macmini") {
+            return "Mac mini"
+        } else if modelName.hasPrefix("MacPro") {
+            return "Mac Pro"
+        } else if modelName.hasPrefix("MacBookPro") {
+            return "MacBook Pro"
+        } else if modelName.hasPrefix("MacBookAir") {
+            return "MacBook Air"
+        } else if modelName.hasPrefix("MacBook") {
+            return "MacBook"
+        } else {
+            return "Mac"
+        }
+    }()
+
+    static let systemName: String = {
+        var sysinfo = utsname()
+        let result = uname(&sysinfo)
+        guard result == EXIT_SUCCESS else { return "macOS (unknown)" }
+        let data = Data(bytes: &sysinfo.machine, count: Int(_SYS_NAMELEN))
+        guard let identifier = String(bytes: data, encoding: .ascii) else { return "macOS (unknown)" }
+        let arch = identifier.trimmingCharacters(in: .controlCharacters)
+        switch arch {
+        case "arm64": return "macOS (Apple Silicon)"
+        case "x86_64": return "macOS (Intel)"
+        default: return "macOS (\(arch))"
+        }
+    }()
+}
+
+#else
+import UIKit
 
 extension UIDevice {
     static let modelName: String = {
@@ -85,10 +161,12 @@ extension UIDevice {
                 case "iPad7,3", "iPad7,4": return "iPad Pro (10.5-inch)"
                 case "iPad8,1", "iPad8,2", "iPad8,3", "iPad8,4": return "iPad Pro (11-inch) (1st generation)"
                 case "iPad8,9", "iPad8,10": return "iPad Pro (11-inch) (2nd generation)"
+                case "iPad13,4", "iPad13,5", "iPad13,6", "iPad13,7" : return "iPad Pro (11-inch) (3rd generation)"
                 case "iPad6,7", "iPad6,8": return "iPad Pro (12.9-inch) (1st generation)"
                 case "iPad7,1", "iPad7,2": return "iPad Pro (12.9-inch) (2nd generation)"
                 case "iPad8,5", "iPad8,6", "iPad8,7", "iPad8,8": return "iPad Pro (12.9-inch) (3rd generation)"
                 case "iPad8,11", "iPad8,12": return "iPad Pro (12.9-inch) (4th generation)"
+                case "iPad13,8", "iPad13,9", "iPad13,10", "iPad13,11": return "iPad Pro (12.9-inch) (5th generation)"
                 case "AppleTV5,3": return "Apple TV"
                 case "AppleTV6,2": return "Apple TV 4K"
                 case "AudioAccessory1,1": return "HomePod"
@@ -98,10 +176,27 @@ extension UIDevice {
                     return "Simulator \(device)"
                 default: return identifier
                 }
+            #elseif os(watchOS)
+            switch identifier {
+            case "Watch1,1", "Watch1,2": return "Apple Watch (1st generation)"
+            case "Watch2,6", "Watch2,7": return "Apple Watch Series 1"
+            case "Watch2,3", "Watch2,4": return "Apple Watch Series 2"
+            case "Watch3,1", "Watch3,2", "Watch3,3", "Watch3,4": return "Apple Watch Series 3"
+            case "Watch4,1", "Watch4,2", "Watch4,3", "Watch4,4": return "Apple Watch Series 4"
+            case "Watch5,1", "Watch5,2", "Watch5,3", "Watch5,4": return "Apple Watch Series 5"
+            case "Watch5,10", "Watch5,11", "Watch5,12": return "Apple Watch SE"
+            case "Watch6,1", "Watch6,2", "Watch6,3", "Watch6,4": return "Apple Watch Series 6"
+            case "i386", "x86_64":
+                let device = mapToDevice(identifier: ProcessInfo()
+                    .environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "tvOS")
+                return "Simulator \(device)"
+            default: return identifier
+            }
             #elseif os(tvOS)
                 switch identifier {
                 case "AppleTV5,3": return "Apple TV 4"
                 case "AppleTV6,2": return "Apple TV 4K"
+                case "AppleTV11,1": return "Apple TV 4K (2nd generation)"
                 case "i386", "x86_64":
                     let device = mapToDevice(identifier: ProcessInfo()
                         .environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "tvOS")
@@ -114,3 +209,5 @@ extension UIDevice {
         return mapToDevice(identifier: identifier)
     }()
 }
+#endif
+
