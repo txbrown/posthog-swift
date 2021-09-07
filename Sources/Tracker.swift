@@ -46,6 +46,7 @@ public class Tracker: ObservableObject {
 
     public func capture(event: Event) {
         self.queue.queue(event: event.payload(id: id))
+        self.logger.log(event: event)
     }
 
     public func screen(name: String, properties: [String: Any] = [:]) {
