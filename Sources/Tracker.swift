@@ -18,6 +18,8 @@ public class Tracker: ObservableObject {
 
     private var isLaunched = false
 
+    var logger = EventLogger()
+
 
     public init(apiKey: String,
                 host: URL,
@@ -79,5 +81,10 @@ public class Tracker: ObservableObject {
     public func backgrounded(properties: [String: Any] = [:]) {
         self.capture(event: .backgrounded(properties: properties))
         self.queue.flushAll()
+    }
+
+    public func logger(isEnabled: Bool) -> Tracker {
+        self.logger.isEnabled = isEnabled
+        return self
     }
 }
