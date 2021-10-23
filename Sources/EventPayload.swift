@@ -18,14 +18,16 @@ struct EventPayload: Codable, Hashable, Comparable {
 
     let properties: [String: AnyCodable]
 
-    init(event: String, distinctId: String, isSensitive: Bool, properties: [String: AnyCodable]) {
+    init(event: String, distinctId: String, isSensitive: Bool, properties: [String: AnyCodable], featureFlags: [String: AnyCodable]) {
         self.event = event
         if isSensitive {
             self.distinctId = "00000000-0000-0000-00000000000000000"
             self.properties = EventPayload.sensitiveContext.merging(properties, uniquingKeysWith: { $1 })
         } else {
             self.distinctId = distinctId
-            self.properties = EventPayload.context.merging(properties, uniquingKeysWith: { $1 })
+            self.properties = EventPayload.context
+                .merging(featureFlags.map({ ("$feature/\($0.key)", $0.value) }), uniquingKeysWith: { $1 })
+                .merging(properties, uniquingKeysWith: { $1 })
         }
     }
 

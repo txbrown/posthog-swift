@@ -22,6 +22,7 @@ public class Tracker: ObservableObject {
 
     @Published public var featureFlags: [String: AnyCodable] = [:]
 
+    @Published public var overrideFlags: [String: AnyCodable] = [:]
 
     public init(apiKey: String,
                 host: URL,
@@ -44,8 +45,6 @@ public class Tracker: ObservableObject {
             self.id = UUID().uuidString
             self.userDefaults.set(self.id, forKey: "posthog.user-id")
         }
-
-        print(self.id)
         
         self.featureFlags = self.queue.storage.load()
         self.loadFeatureFlags()
@@ -56,7 +55,7 @@ public class Tracker: ObservableObject {
         guard self.isEnabled else {
             return
         }
-        self.queue.queue(event: event.payload(id: id))
+        self.queue.queue(event: event.payload(id: id, featureFlags: featureFlags))
         self.logger.log(event: event)
     }
 
@@ -106,9 +105,26 @@ public class Tracker: ObservableObject {
             .receive(on: RunLoop.main)
             .sink(receiveCompletion: { _ in },
                   receiveValue: { [weak self] featureFlags in
-                print(featureFlags)
                 self?.featureFlags = featureFlags
                 self?.queue.storage.save(featureFlags: featureFlags)
             })
+    }
+
+    @discardableResult
+    public func override(featureFlag flag: String, with value: AnyCodable?) -> Tracker {
+        self.overrideFlags[flag] = value
+        return self
+    }
+
+    public func variant(for flag: String) -> AnyCodable? {
+        self.overrideFlags[flag] ?? self.featureFlags[flag]
+    }
+
+    public func variant(for flag: String, default: Bool) -> Bool {
+        self.variant(for: flag)?.value as? Bool ?? `default`
+    }
+
+    public func variant(for flag: String, default: String) -> String {
+        self.variant(for: flag)?.value as? String ?? `default`
     }
 }
