@@ -37,14 +37,29 @@ public class Tracker: ObservableObject {
 
         self.userDefaults = userDefaults
 
+        let savedId = self.userDefaults.string(forKey: "posthog.user-id")
         if let id = id {
             self.id = id
-        } else if let id = self.userDefaults.string(forKey: "posthog.user-id") {
+        } else if let id = savedId {
             self.id = id
         } else {
             self.id = UUID().uuidString
-            self.userDefaults.set(self.id, forKey: "posthog.user-id")
         }
+
+        if let savedId = savedId, savedId != self.id, self.isEnabled {
+            print("Alias from \(savedId) to \(self.id)")
+            self.queue.queue(event: EventPayload(event: "$create_alias",
+                                                 distinctId: self.id,
+                                                 type: .alias,
+                                                 isSensitive: false,
+                                                 properties: [
+                                                    "distinct_id": self.id.codable,
+                                                    "alias": savedId.codable,
+                                                 ],
+                                                 featureFlags: [:]))
+        }
+        print(self.id)
+        self.userDefaults.set(self.id, forKey: "posthog.user-id")
         
         self.featureFlags = self.queue.storage.load()
         self.loadFeatureFlags()

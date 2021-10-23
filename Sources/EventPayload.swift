@@ -8,6 +8,10 @@
 import Foundation
 
 struct EventPayload: Codable, Hashable, Comparable {
+    enum EventType: String, Codable {
+        case capture, alias
+    }
+
     var timestamp: Date = Date()
 
     var messageId: String = UUID().uuidString
@@ -16,18 +20,32 @@ struct EventPayload: Codable, Hashable, Comparable {
 
     let event: String
 
+    let type: EventType
+
     let properties: [String: AnyCodable]
 
-    init(event: String, distinctId: String, isSensitive: Bool, properties: [String: AnyCodable], featureFlags: [String: AnyCodable]) {
+    init(event: String,
+         distinctId: String,
+         type: EventType = .capture,
+         isSensitive: Bool,
+         properties: [String: AnyCodable],
+         featureFlags: [String: AnyCodable]) {
         self.event = event
+        self.type = type
         if isSensitive {
             self.distinctId = "00000000-0000-0000-00000000000000000"
             self.properties = EventPayload.sensitiveContext.merging(properties, uniquingKeysWith: { $1 })
         } else {
+            switch type {
+            case .capture:
             self.distinctId = distinctId
             self.properties = EventPayload.context
                 .merging(featureFlags.map({ ("$feature/\($0.key)", $0.value) }), uniquingKeysWith: { $1 })
                 .merging(properties, uniquingKeysWith: { $1 })
+            case .alias:
+                self.distinctId = distinctId
+                self.properties = properties
+            }
         }
     }
 

@@ -17,7 +17,7 @@ class Client {
 
     private struct DecideRequest: Codable {
         let apiKey: String
-        let distinct_id: String
+        let distinctId: String
     }
 
     private struct DecideResponse: Codable {
@@ -103,7 +103,7 @@ class Client {
 
 
         do {
-            request.httpBody = try self.encoder.encode(DecideRequest(apiKey: apiKey, distinct_id: user))
+            request.httpBody = try self.encoder.encode(DecideRequest(apiKey: apiKey, distinctId: user))
         } catch {
             print("Error encoding requests: \(error)")
             return Fail(error: error).eraseToAnyPublisher()
