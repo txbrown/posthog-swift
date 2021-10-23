@@ -100,6 +100,7 @@ extension ProcessInfo {
 import UIKit
 
 extension UIDevice {
+    //Source: https://github.com/devicekit/DeviceKit/blob/master/Source/Device.generated.swift
     static let modelName: String = {
         var systemInfo = utsname()
         uname(&systemInfo)
@@ -141,6 +142,10 @@ extension UIDevice {
                 case "iPhone13,2": return "iPhone 12"
                 case "iPhone13,3": return "iPhone 12 Pro"
                 case "iPhone13,4": return "iPhone 12 Pro Max"
+                case "iPhone14,5": return "iPhone 13"
+                case "iPhone14,4": return "iPhone 13 mini"
+                case "iPhone14,2": return "iPhone 13 Pro"
+                case "iPhone14,3": return "iPhone 13 Pro Max"
                 case "iPad2,1", "iPad2,2", "iPad2,3", "iPad2,4": return "iPad 2"
                 case "iPad3,1", "iPad3,2", "iPad3,3": return "iPad (3rd generation)"
                 case "iPad3,4", "iPad3,5", "iPad3,6": return "iPad (4th generation)"

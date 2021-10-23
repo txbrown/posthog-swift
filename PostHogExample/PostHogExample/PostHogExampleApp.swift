@@ -4,7 +4,7 @@ import PostHog
 @main
 struct PostHogExampleApp: App {
 
-    @StateObject var tracker = Tracker(apiKey: "3ySFxM8aQovRF6GGOgcENolSZDARC2HCIds3AuPh1Io", host: URL(string: "https://posthog.structured.today")!, application: .shared)
+    @StateObject var tracker = Tracker(apiKey: "61ICqPkNhFJEx_a69ImxM4G3IG_M0w9JjkmjtoRRLsQ", host: URL(string: "https://posthog.structured.today")!, backgroundHandler: UIApplication.shared).logger(isEnabled: true)
     @Environment(\.scenePhase) var scenePhase
 
     var body: some Scene {
@@ -14,15 +14,15 @@ struct PostHogExampleApp: App {
                 .onChange(of: scenePhase, perform: { value in
                     switch value {
                     case .active:
-                        tracker.launch()
+                        tracker.launched()
                     case .background:
-                        tracker.background()
+                        tracker.backgrounded()
                     default:
                         break
                     }
                 })
                 .onAppear {
-                    tracker.launch()
+//                    tracker.launch
                 }
         }
     }

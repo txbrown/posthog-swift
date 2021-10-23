@@ -12,6 +12,9 @@ struct ContentView: View {
     @EnvironmentObject var tracker: Tracker
 
     var body: some View {
+        ForEach(Array(tracker.featureFlags), id: \.key) {
+            Text("\($0.key): \($0.value.description)")
+        }
         Button("Send Event") {
             tracker.capture(event: Event("Click"))
         }

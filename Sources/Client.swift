@@ -9,15 +9,23 @@ import Foundation
 import Combine
 
 class Client {
-    struct Request: Codable {
+    private struct BatchRequest: Codable {
         let sentAt: Date
         let batch: [EventPayload]
         let apiKey: String
     }
+
+    private struct DecideRequest: Codable {
+        let apiKey: String
+        let distinct_id: String
+    }
+
+    private struct DecideResponse: Codable {
+        let featureFlags: [String: AnyCodable]
+    }
+
     let host: URL
     let apiKey: String
-
-    var isSendingEnabled: Bool
 
     private let encoder: JSONEncoder = {
         var encoder = JSONEncoder()
@@ -27,10 +35,15 @@ class Client {
     }()
 
 
-    init(host: URL, apiKey: String, isSendingEnabled: Bool) {
+    private let decoder: JSONDecoder = {
+        var decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+
+    init(host: URL, apiKey: String) {
         self.host = host
         self.apiKey = apiKey
-        self.isSendingEnabled = isSendingEnabled
     }
 
 
@@ -38,20 +51,17 @@ class Client {
     /// - Parameter requests: All request to be sent.
     /// - Returns: A publisher with a boolean indicating if the request should be retried (true) or discarded (false).
     func send(batch: [EventPayload]) -> AnyPublisher<Bool, Never> {
-        guard isSendingEnabled else {
-            return Just(true).eraseToAnyPublisher()
-        }
         var request = URLRequest(url: host.appendingPathComponent("batch"))
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
             //TODO: Add gzip compression.
 //        request.addValue("gzip", forHTTPHeaderField: "Accept-Encoding")
 //        request.addValue("gzip", forHTTPHeaderField: "Content-Encoding")
-        request.addValue("posthog-ios/1.0", forHTTPHeaderField: "User-Agent") //TODO: Add real user agent
+        request.addValue("posthog-ios/1.1", forHTTPHeaderField: "User-Agent") //TODO: Add real user agent
 
 
         do {
-            request.httpBody = try self.encoder.encode(Request(sentAt: Date(), batch: batch, apiKey: apiKey))
+            request.httpBody = try self.encoder.encode(BatchRequest(sentAt: Date(), batch: batch, apiKey: apiKey))
         } catch {
             print("Error encoding requests: \(error)")
             return Just(false).eraseToAnyPublisher()
@@ -79,5 +89,30 @@ class Client {
             .replaceError(with: true)
             .eraseToAnyPublisher()
 
+    }
+
+    func decide(for user: String) -> AnyPublisher<[String: AnyCodable], Error> {
+        let url = host.appendingPathComponent("decide")
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.queryItems = [.init(name: "v", value: "2")]
+        var request = URLRequest(url: components?.url ?? url)
+
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("posthog-ios/1.1", forHTTPHeaderField: "User-Agent") //TODO: Add real user agent
+
+
+        do {
+            request.httpBody = try self.encoder.encode(DecideRequest(apiKey: apiKey, distinct_id: user))
+        } catch {
+            print("Error encoding requests: \(error)")
+            return Fail(error: error).eraseToAnyPublisher()
+        }
+
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .map(\.data)
+            .decode(type: DecideResponse.self, decoder: decoder)
+            .map(\.featureFlags)
+            .eraseToAnyPublisher()
     }
 }

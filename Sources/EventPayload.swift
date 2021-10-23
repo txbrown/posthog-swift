@@ -18,10 +18,15 @@ struct EventPayload: Codable, Hashable, Comparable {
 
     let properties: [String: AnyCodable]
 
-    init(event: String, distinctId: String, properties: [String: AnyCodable]) {
+    init(event: String, distinctId: String, isSensitive: Bool, properties: [String: AnyCodable]) {
         self.event = event
-        self.distinctId = distinctId
-        self.properties = EventPayload.context.merging(properties, uniquingKeysWith: { $1 })
+        if isSensitive {
+            self.distinctId = "00000000-0000-0000-00000000000000000"
+            self.properties = EventPayload.sensitiveContext.merging(properties, uniquingKeysWith: { $1 })
+        } else {
+            self.distinctId = distinctId
+            self.properties = EventPayload.context.merging(properties, uniquingKeysWith: { $1 })
+        }
     }
 
     static var context: [String: AnyCodable] {
@@ -42,7 +47,7 @@ struct EventPayload: Codable, Hashable, Comparable {
         context["$screen_height"] = Double(Device.screenSize.height).codable
 
         context["$lib"] = "posthog-swift"
-        context["$lib_version"] = "1.0.0"
+        context["$lib_version"] = "1.1.0"
 
         if let lang = Locale.current.languageCode {
             if let country = Locale.current.regionCode {
@@ -50,10 +55,25 @@ struct EventPayload: Codable, Hashable, Comparable {
             } else {
                 context["$local"] = lang.codable
             }
+            context["$language"] = lang.codable
         }
         context["$timezone"] = TimeZone.current.identifier.codable
 
         //TODO: Add $network_cellular and $network_wifi
+
+        return context
+    }
+
+    static var sensitiveContext: [String: AnyCodable] {
+        var context: [String: AnyCodable] = [:]
+        let info = (Bundle.main.infoDictionary ?? [:]).merging(Bundle.main.localizedInfoDictionary ?? [:], uniquingKeysWith: { $1 })
+        context["$app_name"] = (info["CFBundleDisplayName"] as? String)?.codable
+        context["$app_version"] = (info["CFBundleShortVersionString"] as? String)?.codable
+        context["$app_build"] = (info["CFBundleVersion"] as? String)?.codable
+        context["$app_namespace"] = Bundle.main.bundleIdentifier?.codable
+
+        context["$lib"] = "posthog-swift"
+        context["$lib_version"] = "1.1.0"
 
         return context
     }

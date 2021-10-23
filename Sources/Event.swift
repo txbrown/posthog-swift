@@ -14,13 +14,17 @@ public struct Event: ExpressibleByStringLiteral {
 
     let properties: [String: Any]
 
-    public init(_ value: String, properties: [String: Any]) {
+    let isSensitive: Bool
+
+    public init(_ value: String, isSensitive: Bool = false, properties: [String: Any]) {
         self.value = value
+        self.isSensitive = isSensitive
         self.properties = properties
     }
 
     public init(stringLiteral value: String) {
         self.value = value
+        self.isSensitive = false
         self.properties = [:]
     }
     
@@ -196,6 +200,6 @@ public struct Event: ExpressibleByStringLiteral {
     }
 
     func payload(id: String) -> EventPayload {
-        EventPayload(event: self.value, distinctId: id, properties: properties.mapValues({ AnyCodable($0) }))
+        EventPayload(event: self.value, distinctId: id, isSensitive: isSensitive, properties: properties.mapValues({ AnyCodable($0) }))
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 public class Tracker: ObservableObject {
 
@@ -6,10 +7,7 @@ public class Tracker: ObservableObject {
     public let host: URL
     public var id: String
 
-    public var isEnabled: Bool {
-        get { self.queue.client.isSendingEnabled }
-        set { self.queue.client.isSendingEnabled = newValue }
-    }
+    public var isEnabled: Bool
 
     private let queue: Queue
 
@@ -18,7 +16,11 @@ public class Tracker: ObservableObject {
 
     private var isLaunched = false
 
+    private var featureFlagCancellable: AnyCancellable?
+
     var logger = EventLogger()
+
+    @Published public var featureFlags: [String: AnyCodable] = [:]
 
 
     public init(apiKey: String,
@@ -29,7 +31,8 @@ public class Tracker: ObservableObject {
                 backgroundHandler: BackgroundTaskHandler? = nil) {
         self.apiKey = apiKey
         self.host = host
-        self.queue = Queue(client: Client(host: host, apiKey: apiKey, isSendingEnabled: isEnabled), background: backgroundHandler)
+        self.isEnabled = isEnabled
+        self.queue = Queue(client: Client(host: host, apiKey: apiKey), background: backgroundHandler)
 
         self.userDefaults = userDefaults
 
@@ -39,12 +42,20 @@ public class Tracker: ObservableObject {
             self.id = id
         } else {
             self.id = UUID().uuidString
-            self.userDefaults.setValue(id, forKey: "posthog.user-id")
+            self.userDefaults.set(self.id, forKey: "posthog.user-id")
         }
+
+        print(self.id)
+        
+        self.featureFlags = self.queue.storage.load()
+        self.loadFeatureFlags()
     }
 
 
     public func capture(event: Event) {
+        guard self.isEnabled else {
+            return
+        }
         self.queue.queue(event: event.payload(id: id))
         self.logger.log(event: event)
     }
@@ -87,5 +98,17 @@ public class Tracker: ObservableObject {
     public func logger(isEnabled: Bool) -> Tracker {
         self.logger.isEnabled = isEnabled
         return self
+    }
+
+    public func loadFeatureFlags() {
+        self.featureFlagCancellable?.cancel()
+        self.featureFlagCancellable = self.queue.client.decide(for: self.id)
+            .receive(on: RunLoop.main)
+            .sink(receiveCompletion: { _ in },
+                  receiveValue: { [weak self] featureFlags in
+                print(featureFlags)
+                self?.featureFlags = featureFlags
+                self?.queue.storage.save(featureFlags: featureFlags)
+            })
     }
 }
