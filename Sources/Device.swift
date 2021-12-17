@@ -2,32 +2,33 @@
 //TODO: Adjust for other platforms
 struct Device {
     static var model: String {
-        #if os(macOS)
-        return ProcessInfo.modelName
+        #if targetEnvironment(macCatalyst)
+        return ProcessInfo.model
         #else
         return UIDevice.modelName
         #endif
     }
 
     static var type: String {
-        #if os(macOS)
-        return ProcessInfo.model
+        #if targetEnvironment(macCatalyst)
+        return "Mac"
         #else
         return UIDevice.current.model
         #endif
     }
 
     static var system: String {
-        #if os(macOS)
-        return ProcessInfo.systemName
+        #if targetEnvironment(macCatalyst)
+        return "macOS"
         #else
         return UIDevice.current.systemName
         #endif
     }
 
     static var systemVersion: String {
-        #if os(macOS)
-        return ProcessInfo.processInfo.operatingSystemVersionString
+        #if targetEnvironment(macCatalyst)
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
         #else
         return UIDevice.current.systemVersion
         #endif
@@ -43,7 +44,7 @@ struct Device {
     }
 }
 
-#if os(macOS)
+//#if os(macOS)
 
 import IOKit
 import AppKit
@@ -96,7 +97,7 @@ extension ProcessInfo {
     }()
 }
 
-#else
+//#else
 import UIKit
 
 extension UIDevice {
@@ -214,5 +215,5 @@ extension UIDevice {
         return mapToDevice(identifier: identifier)
     }()
 }
-#endif
+//#endif
 

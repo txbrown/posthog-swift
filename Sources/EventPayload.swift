@@ -67,7 +67,7 @@ struct EventPayload: Codable, Hashable, Comparable {
         context["$screen_height"] = Double(Device.screenSize.height).codable
 
         context["$lib"] = "posthog-swift"
-        context["$lib_version"] = "1.1.0"
+        context["$lib_version"] = "1.2.0"
 
         if let lang = Locale.current.languageCode {
             if let country = Locale.current.regionCode {
@@ -93,7 +93,7 @@ struct EventPayload: Codable, Hashable, Comparable {
         context["$app_namespace"] = Bundle.main.bundleIdentifier?.codable
 
         context["$lib"] = "posthog-swift"
-        context["$lib_version"] = "1.1.0"
+        context["$lib_version"] = "1.2.0"
 
         return context
     }
