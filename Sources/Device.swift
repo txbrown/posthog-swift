@@ -1,3 +1,4 @@
+import UIKit
 
 //TODO: Adjust for other platforms
 struct Device {
@@ -44,7 +45,7 @@ struct Device {
     }
 }
 
-//#if os(macOS)
+#if targetEnvironment(macCatalyst)
 
 import IOKit
 import AppKit
@@ -97,8 +98,7 @@ extension ProcessInfo {
     }()
 }
 
-//#else
-import UIKit
+#else
 
 extension UIDevice {
     //Source: https://github.com/devicekit/DeviceKit/blob/master/Source/Device.generated.swift
@@ -215,5 +215,5 @@ extension UIDevice {
         return mapToDevice(identifier: identifier)
     }()
 }
-//#endif
+#endif
 
