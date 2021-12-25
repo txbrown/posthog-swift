@@ -14,14 +14,14 @@ struct EventLogger {
     var isEnabled: Bool = false
 
     init() {
-        if #available(iOS 14, macOS 11, *) {
+        if #available(iOS 14, macOS 11, watchOS 7, *) {
             self.logger = Logger(subsystem: "com.posthog.tracker", category: "PostHog")
         }
     }
 
     func log(event: Event) {
         if self.isEnabled,
-           #available(iOS 14, macOS 11, *),
+           #available(iOS 14, macOS 11, watchOS 7, *),
            let logger = self.logger as? Logger {
             let properties = event.properties
                 .mapValues({ AnyCodable($0) })

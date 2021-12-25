@@ -105,6 +105,7 @@ public struct Event: ExpressibleByStringLiteral {
         ].merging(properties, uniquingKeysWith: { $1 }))
     }
 
+    @available(watchOS 6.2, *)
     public static func purchaseFailed(error: Error?,
                                       id: String,
                                       currency: String,
