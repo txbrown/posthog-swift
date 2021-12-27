@@ -1,7 +1,9 @@
-import UIKit
+#if os(watchOS)
 import WatchKit
+#else
+import UIKit
+#endif
 
-//TODO: Adjust for other platforms
 struct Device {
     static var model: String {
 #if targetEnvironment(macCatalyst)
