@@ -43,8 +43,8 @@ struct EventPayload: Codable, Hashable, Comparable {
                     .merging(featureFlags.map({ ("$feature/\($0.key)", $0.value) }), uniquingKeysWith: { $1 })
                     .merging(properties, uniquingKeysWith: { $1 })
                 if let version = mergeredProperties["$app_version"] {
-                    mergeredProperties["$set_once"] = AnyCodable((mergeredProperties["$set_once"]?.value as? [String: AnyCodable] ?? [:])
-                        .merging(["$inital_app_version": version], uniquingKeysWith: { (prev, _ ) in prev }))
+                    mergeredProperties["$set_once"] = AnyCodable((mergeredProperties["$set_once"]?.value as? [String: Any] ?? [:])
+                        .merging(["$inital_app_version": version.value], uniquingKeysWith: { (prev, _ ) in prev }))
                 }
                 self.properties = mergeredProperties
             case .alias:
