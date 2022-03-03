@@ -1,7 +1,9 @@
 #if os(watchOS)
 import WatchKit
-#else
+#elseif os(iOS)
 import UIKit
+#else
+import AppKit
 #endif
 
 struct Device {
@@ -18,8 +20,10 @@ struct Device {
         return "Mac"
 #elseif os(watchOS)
         return WKInterfaceDevice.current().model
-#else
+#elseif os(iOS)
         return UIDevice.current.model
+#elseif os(macOS)
+        return Device.model
 #endif
     }
     
@@ -29,8 +33,10 @@ struct Device {
 #elseif os(watchOS)
         return WKInterfaceDevice.current().systemName
         
-#else
+#elseif os(iOS)
         return UIDevice.current.systemName
+#elseif os(macOS)
+        return Device.model
 #endif
     }
     
@@ -40,8 +46,10 @@ struct Device {
         return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
 #elseif os(watchOS)
         return WKInterfaceDevice.current().systemVersion
-#else
+#elseif os(iOS)
         return UIDevice.current.systemVersion
+#elseif os(macOS)
+        return Device.model
 #endif
     }
     
@@ -222,6 +230,14 @@ extension Device {
             default: return identifier
             }
 #endif
+            
+            switch identifier {
+            case "i386", "x86_64", "arm64":
+                let device = mapToDevice(identifier: ProcessInfo()
+                                            .environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "macOS")
+                return "Simulator \(device)"
+            default: return identifier
+            }
         }
         
         return mapToDevice(identifier: identifier)
