@@ -64,18 +64,23 @@ import AppKit
 
 extension ProcessInfo {
     static let modelName: String = {
-        let service = IOServiceGetMatchingService(kIOMasterPortDefault,
-                                                  IOServiceMatching("IOPlatformExpertDevice"))
-        var modelIdentifier: String?
-        if let modelData = IORegistryEntryCreateCFProperty(service, "model" as CFString, kCFAllocatorDefault, 0).takeRetainedValue() as? Data {
-            modelIdentifier = String(data: modelData, encoding: .utf8)?.trimmingCharacters(in: .controlCharacters)
+        if #available(macCatalyst 15.0, *) {
+            let service = IOServiceGetMatchingService(kIOMainPortDefault,
+                                                      IOServiceMatching("IOPlatformExpertDevice"))
+            var modelIdentifier: String?
+            if let modelData = IORegistryEntryCreateCFProperty(service, "model" as CFString, kCFAllocatorDefault, 0).takeRetainedValue() as? Data {
+                modelIdentifier = String(data: modelData, encoding: .utf8)?.trimmingCharacters(in: .controlCharacters)
+            }
+            
+            IOObjectRelease(service)
+            return modelIdentifier ?? "macOS"
+        } else {
+            return "macOS"
         }
-        
-        IOObjectRelease(service)
-        return modelIdentifier ?? "macOS"
     }()
     
     static let model: String = {
+        print(modelName)
         if modelName.hasPrefix("iMacPro") {
             return "iMac Pro"
         } else if modelName.hasPrefix("iMac") {
