@@ -80,7 +80,6 @@ extension ProcessInfo {
     }()
     
     static let model: String = {
-        print(modelName)
         if modelName.hasPrefix("iMacPro") {
             return "iMac Pro"
         } else if modelName.hasPrefix("iMac") {
