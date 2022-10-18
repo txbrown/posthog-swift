@@ -23,6 +23,8 @@ public class Tracker: ObservableObject {
     @Published public var featureFlags: [String: AnyCodable] = [:]
 
     @Published public var overrideFlags: [String: AnyCodable] = [:]
+    
+    var sessionID: UUID?
 
     public init(apiKey: String,
                 host: URL,
@@ -50,6 +52,7 @@ public class Tracker: ObservableObject {
             print("Alias from \(savedId) to \(self.id)")
             self.queue.queue(event: EventPayload(event: "$create_alias",
                                                  distinctId: self.id,
+                                                 sessionId: self.sessionID?.uuidString,
                                                  type: .alias,
                                                  isSensitive: false,
                                                  properties: [
@@ -70,7 +73,7 @@ public class Tracker: ObservableObject {
         guard self.isEnabled else {
             return
         }
-        self.queue.queue(event: event.payload(id: id, featureFlags: featureFlags))
+        self.queue.queue(event: event.payload(id: id, sessionID: self.sessionID?.uuidString, featureFlags: featureFlags))
         self.logger.log(event: event)
     }
 
@@ -79,6 +82,7 @@ public class Tracker: ObservableObject {
     }
 
     public func launched(properties: [String: Any] = [:]) {
+        self.sessionID = UUID()
         let previousVersion = self.userDefaults.string(forKey: "posthog.version")
         let previousBuild = self.userDefaults.string(forKey: "posthog.build")
 
@@ -107,6 +111,7 @@ public class Tracker: ObservableObject {
     public func backgrounded(properties: [String: Any] = [:]) {
         self.capture(event: .backgrounded(properties: properties))
         self.queue.flushAll()
+        self.sessionID = nil
     }
 
     public func logger(isEnabled: Bool) -> Tracker {
