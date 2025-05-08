@@ -26,6 +26,7 @@ struct EventPayload: Codable, Hashable, Comparable {
     
     init(event: String,
          distinctId: String,
+         sessionId: String?,
          type: EventType = .capture,
          isSensitive: Bool,
          properties: [String: AnyCodable],
@@ -42,6 +43,9 @@ struct EventPayload: Codable, Hashable, Comparable {
                 var mergeredProperties = EventPayload.context
                     .merging(featureFlags.map({ ("$feature/\($0.key)", $0.value) }), uniquingKeysWith: { $1 })
                     .merging(properties, uniquingKeysWith: { $1 })
+                if let sessionId = sessionId {
+                    mergeredProperties["$session_id"] = sessionId.codable
+                }
                 if let version = mergeredProperties["$app_version"] {
                     mergeredProperties["$set_once"] = AnyCodable((mergeredProperties["$set_once"]?.value as? [String: Any] ?? [:])
                         .merging(["$inital_app_version": version.value], uniquingKeysWith: { (prev, _ ) in prev }))

@@ -200,7 +200,7 @@ public struct Event: ExpressibleByStringLiteral {
         Event("Application Backgrounded", properties: properties)
     }
 
-    func payload(id: String, featureFlags: [String: AnyCodable]) -> EventPayload {
-        EventPayload(event: self.value, distinctId: id, isSensitive: isSensitive, properties: properties.mapValues({ AnyCodable($0) }), featureFlags: featureFlags)
+    func payload(id: String, sessionID: String?, featureFlags: [String: AnyCodable]) -> EventPayload {
+        EventPayload(event: self.value, distinctId: id, sessionId: sessionID, isSensitive: isSensitive, properties: properties.mapValues({ AnyCodable($0) }), featureFlags: featureFlags)
     }
 }
