@@ -1,8 +1,7 @@
-import Foundation
 import Combine
+import Foundation
 
 public class Tracker: ObservableObject {
-
     public let apiKey: String
     public let host: URL
     public var id: String
@@ -10,7 +9,6 @@ public class Tracker: ObservableObject {
     public var isEnabled: Bool
 
     private let queue: Queue
-
 
     private let userDefaults: UserDefaults
 
@@ -23,7 +21,7 @@ public class Tracker: ObservableObject {
     @Published public var featureFlags: [String: AnyCodable] = [:]
 
     @Published public var overrideFlags: [String: AnyCodable] = [:]
-    
+
     var sessionID: UUID?
 
     public init(apiKey: String,
@@ -31,11 +29,12 @@ public class Tracker: ObservableObject {
                 isEnabled: Bool = true,
                 id: String? = nil,
                 userDefaults: UserDefaults = .standard,
-                backgroundHandler: BackgroundTaskHandler? = nil) {
+                backgroundHandler: BackgroundTaskHandler? = nil)
+    {
         self.apiKey = apiKey
         self.host = host
         self.isEnabled = isEnabled
-        self.queue = Queue(client: Client(host: host, apiKey: apiKey), background: backgroundHandler)
+        queue = Queue(client: Client(host: host, apiKey: apiKey), background: backgroundHandler)
 
         self.userDefaults = userDefaults
 
@@ -50,101 +49,110 @@ public class Tracker: ObservableObject {
 
         if let savedId = savedId, savedId != self.id, self.isEnabled {
             print("Alias from \(savedId) to \(self.id)")
-            self.queue.queue(event: EventPayload(event: "$create_alias",
-                                                 distinctId: self.id,
-                                                 sessionId: self.sessionID?.uuidString,
-                                                 type: .alias,
-                                                 isSensitive: false,
-                                                 properties: [
-                                                    "distinct_id": self.id.codable,
-                                                    "alias": savedId.codable,
-                                                 ],
-                                                 featureFlags: [:]))
+            queue.queue(event: EventPayload(event: "$create_alias",
+                                            distinctId: self.id,
+                                            sessionId: sessionID?.uuidString,
+                                            type: .alias,
+                                            isSensitive: false,
+                                            properties: [
+                                                "distinct_id": self.id.codable,
+                                                "alias": savedId.codable,
+                                            ],
+                                            featureFlags: [:]))
         }
         print(self.id)
         self.userDefaults.set(self.id, forKey: "posthog.user-id")
-        
-        self.featureFlags = self.queue.storage.load()
-        self.loadFeatureFlags()
+
+        featureFlags = queue.storage.load()
+        loadFeatureFlags()
     }
 
-
     public func capture(event: Event) {
-        guard self.isEnabled else {
+        guard isEnabled else {
             return
         }
-        self.queue.queue(event: event.payload(id: id, sessionID: self.sessionID?.uuidString, featureFlags: featureFlags))
-        self.logger.log(event: event)
+        queue.queue(event: event.payload(id: id, sessionID: sessionID?.uuidString, featureFlags: featureFlags))
+        logger.log(event: event)
     }
 
     public func screen(name: String, properties: [String: Any] = [:]) {
-        self.capture(event: Event.screen(with: name, properties: properties))
+        capture(event: Event.screen(with: name, properties: properties))
     }
 
     public func launched(properties: [String: Any] = [:]) {
-        self.sessionID = UUID()
-        let previousVersion = self.userDefaults.string(forKey: "posthog.version")
-        let previousBuild = self.userDefaults.string(forKey: "posthog.build")
+        sessionID = UUID()
+        let previousVersion = userDefaults.string(forKey: "posthog.version")
+        let previousBuild = userDefaults.string(forKey: "posthog.build")
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
 
-        self.userDefaults.setValue(version, forKey: "posthog.version")
-        self.userDefaults.setValue(build, forKey: "posthog.build")
+        userDefaults.setValue(version, forKey: "posthog.version")
+        userDefaults.setValue(build, forKey: "posthog.build")
 
         if previousBuild == nil {
-            self.capture(event: .installed(version: version, build: build))
+            capture(event: .installed(version: version, build: build))
         } else if build != previousBuild {
-            self.capture(event: .updated(version: version,
-                                         build: build,
-                                         previousVersion: previousVersion ?? "",
-                                         previousBuild: previousBuild ?? ""))
-        }
-        self.capture(event: .opened(fromBackground: isLaunched,
-                                    version: version,
+            capture(event: .updated(version: version,
                                     build: build,
-                                    properties: properties))
+                                    previousVersion: previousVersion ?? "",
+                                    previousBuild: previousBuild ?? ""))
+        }
+        capture(event: .opened(fromBackground: isLaunched,
+                               version: version,
+                               build: build,
+                               properties: properties))
 
-        self.isLaunched = true
+        isLaunched = true
     }
 
     public func backgrounded(properties: [String: Any] = [:]) {
-        self.capture(event: .backgrounded(properties: properties))
-        self.queue.flushAll()
-        self.sessionID = nil
+        capture(event: .backgrounded(properties: properties))
+        queue.flushAll()
+        sessionID = nil
     }
 
     public func logger(isEnabled: Bool) -> Tracker {
-        self.logger.isEnabled = isEnabled
+        logger.isEnabled = isEnabled
         return self
     }
 
     public func loadFeatureFlags() {
-        self.featureFlagCancellable?.cancel()
-        self.featureFlagCancellable = self.queue.client.decide(for: self.id)
+        featureFlagCancellable?.cancel()
+        featureFlagCancellable = queue.client.decide(for: id)
             .receive(on: RunLoop.main)
             .sink(receiveCompletion: { _ in },
                   receiveValue: { [weak self] featureFlags in
-                self?.featureFlags = featureFlags
-                self?.queue.storage.save(featureFlags: featureFlags)
-            })
+                      self?.featureFlags = featureFlags
+                      self?.queue.storage.save(featureFlags: featureFlags)
+                  })
     }
 
     @discardableResult
     public func override(featureFlag flag: String, with value: AnyCodable?) -> Tracker {
-        self.overrideFlags[flag] = value
+        overrideFlags[flag] = value
         return self
     }
 
     public func variant(for flag: String) -> AnyCodable? {
-        self.overrideFlags[flag] ?? self.featureFlags[flag]
+        overrideFlags[flag] ?? featureFlags[flag]
     }
 
     public func variant(for flag: String, default: Bool) -> Bool {
-        self.variant(for: flag)?.value as? Bool ?? `default`
+        variant(for: flag)?.value as? Bool ?? `default`
     }
 
     public func variant(for flag: String, default: String) -> String {
-        self.variant(for: flag)?.value as? String ?? `default`
+        variant(for: flag)?.value as? String ?? `default`
+    }
+
+    public func identify(distinctId id: String, userProperties: [String: Any], properties: [String: Any] = [:]) {
+        guard isEnabled else {
+            return
+        }
+
+        let event = Event("$identify", properties: properties.merging(["$set": userProperties], uniquingKeysWith: { $1 }))
+        queue.queue(event: event.payload(id: id, sessionID: sessionID?.uuidString, featureFlags: featureFlags))
+        logger.log(event: event)
     }
 }
